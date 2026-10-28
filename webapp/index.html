@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>School Examination System - Management</title>
+    <style>
+        body {
+            font-family: monospace;
+            margin: 20px;
+            background: #ffffff;
+            color: #000000;
+        }
+        h1, h2 {
+            border-bottom: 1px solid #000;
+            padding-bottom: 5px;
+        }
+        .nav {
+            margin-bottom: 15px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        .nav button {
+            background: #eeeeee;
+            border: 1px solid #000;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-family: monospace;
+            font-size: 13px;
+        }
+        .nav button.active {
+            background: #000000;
+            color: #ffffff;
+        }
+        .form-section {
+            border: 1px solid #000;
+            padding: 15px;
+            margin-bottom: 20px;
+            background: #fafafa;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group label {
+            font-size: 11px;
+            font-weight: bold;
+            margin-bottom: 3px;
+        }
+        .form-group input {
+            padding: 5px;
+            border: 1px solid #000;
+            font-family: monospace;
+        }
+        .controls-section {
+            border: 1px solid #000;
+            padding: 12px;
+            margin-bottom: 15px;
+            background: #f0f0f0;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+        }
+        .controls-group {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .controls-group label {
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .controls-group input, .controls-group select {
+            padding: 5px;
+            border: 1px solid #000;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .btn-action {
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-family: monospace;
+        }
+        .btn-cancel {
+            background: #fff;
+            color: #000;
+            border: 1px solid #000;
+            padding: 6px 14px;
+            cursor: pointer;
+            font-family: monospace;
+            margin-left: 5px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+        th, td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: left;
+        }
+        th {
+            background: #eeeeee;
+        }
+        .btn-tbl {
+            padding: 2px 6px;
+            font-size: 11px;
+            border: 1px solid #000;
+            cursor: pointer;
+            background: #fff;
+        }
+        .status-box {
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #000;
+            background: #f9f9f9;
+        }
+        .error {
+            color: #cc0000;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>School Examination System</h1>
+    <p>Backend: <code>Standalone Java HTTP Server</code> | Operations: <code>Search / Sort / Filter / CRUD</code></p>
+    
+    <div id="statusBox" class="status-box">Status: Ready</div>
+
+    <div class="nav">
+        <button class="tab-btn active" onclick="switchTable('Department', this)">Department</button>
+        <button class="tab-btn" onclick="switchTable('Teacher', this)">Teacher</button>
+        <button class="tab-btn" onclick="switchTable('Course', this)">Course</button>
+        <button class="tab-btn" onclick="switchTable('Subject', this)">Subject</button>
+        <button class="tab-btn" onclick="switchTable('Student', this)">Student</button>
+        <button class="tab-btn" onclick="switchTable('Attendance', this)">Attendance</button>
+        <button class="tab-btn" onclick="switchTable('Exam', this)">Exam</button>
+        <button class="tab-btn" onclick="switchTable('Exam_Schedule', this)">Exam_Schedule</button>
+        <button class="tab-btn" onclick="switchTable('Marks', this)">Marks</button>
+        <button class="tab-btn" onclick="switchTable('Result', this)">Result</button>
+    </div>
+
+    <!-- Dynamic Form for Insert/Update -->
+    <div class="form-section">
+        <h3 id="formTitle" style="margin-top:0;">Add New Record</h3>
+        <form id="recordForm" onsubmit="saveRecord(event)">
+            <div class="form-grid" id="formInputs"></div>
+            <button type="submit" class="btn-action" id="saveBtn">Save Record</button>
+            <button type="button" class="btn-cancel" onclick="resetForm()">Clear</button>
+        </form>
+    </div>
+
+    <h2 id="tableTitle">Table: Department</h2>
+
+    <!-- Search, Sort & Filter Toolbar -->
+    <div class="controls-section">
+        <div class="controls-group">
+            <label for="searchInput">Search:</label>
+            <input type="text" id="searchInput" placeholder="Type to search..." oninput="applyControls()">
+        </div>
+
+        <div class="controls-group">
+            <label for="sortColumn">Sort By:</label>
+            <select id="sortColumn" onchange="applyControls()"></select>
+            <select id="sortOrder" onchange="applyControls()">
+                <option value="ASC">Ascending (A-Z, 0-9)</option>
+                <option value="DESC">Descending (Z-A, 9-0)</option>
+            </select>
+        </div>
+
+        <div class="controls-group">
+            <label for="filterColumn">Filter Column:</label>
+            <select id="filterColumn" onchange="applyControls()"></select>
+            <label for="filterValue">Value:</label>
+            <input type="text" id="filterValue" placeholder="Exact or match..." oninput="applyControls()">
+        </div>
+
+        <button class="btn-cancel" onclick="clearControls()">Reset Controls</button>
+    </div>
+
+    <div id="tableContainer">Fetching data...</div>
+
+    <script>
+        let currentTable = 'Department';
+        let currentData = [];
+        let filteredData = [];
+        let isEditing = false;
+        let pkField = '';
+
+        const pkMapping = {
+            'Department': 'D_ID',
+            'Teacher': 'T_ID',
+            'Course': 'Course_ID',
+            'Subject': 'Sub_Code',
+            'Student': 'S_ID',
+            'Attendance': 'Attendance_ID',
+            'Exam': 'Exam_ID',
+            'Exam_Schedule': 'Schedule_ID',
+            'Marks': 'Mark_ID',
+            'Result': 'Result_ID'
+        };
+
+        function switchTable(tableName, btnElement) {
+            currentTable = tableName;
+            pkField = pkMapping[tableName];
+            if (btnElement) {
+                document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                btnElement.classList.add('active');
+            }
+            resetForm();
+            clearControlInputs();
+            loadTable();
+        }
+
+        async function loadTable() {
+            document.getElementById('tableTitle').innerText = 'Table: ' + currentTable;
+            const container = document.getElementById('tableContainer');
+            const statusBox = document.getElementById('statusBox');
+            
+            statusBox.innerHTML = `Status: Fetching <code>${currentTable}</code>...`;
+            statusBox.classList.remove('error');
+
+            try {
+                const response = await fetch(`api/data?table=${currentTable}`);
+                const data = await response.json();
+
+                if (!response.ok) throw new Error(data.error || 'Server error');
+
+                currentData = data;
+                statusBox.innerHTML = `Status: Ready. Loaded <b>${data.length}</b> record(s) from <code>${currentTable}</code>.`;
+
+                buildFormInputs();
+                populateControlDropdowns();
+                applyControls();
+            } catch (err) {
+                statusBox.classList.add('error');
+                statusBox.innerText = 'Error: ' + err.message;
+                container.innerHTML = `<b class="error">Failed to load data. Ensure server is running.</b>`;
+            }
+        }
+
+        function populateControlDropdowns() {
+            const sortSelect = document.getElementById('sortColumn');
+            const filterSelect = document.getElementById('filterColumn');
+
+            sortSelect.innerHTML = '<option value="">-- None --</option>';
+            filterSelect.innerHTML = '<option value="">-- All Columns --</option>';
+
+            if (currentData.length === 0) return;
+
+            const columns = Object.keys(currentData[0]);
+            columns.forEach(col => {
+                sortSelect.innerHTML += `<option value="${col}">${col}</option>`;
+                filterSelect.innerHTML += `<option value="${col}">${col}</option>`;
+            });
+        }
+
+        function clearControlInputs() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('sortColumn').value = '';
+            document.getElementById('sortOrder').value = 'ASC';
+            document.getElementById('filterColumn').value = '';
+            document.getElementById('filterValue').value = '';
+        }
+
+        function clearControls() {
+            clearControlInputs();
+            applyControls();
+        }
+
+        function applyControls() {
+            if (currentData.length === 0) {
+                filteredData = [];
+                renderTable();
+                return;
+            }
+
+            const searchQuery = document.getElementById('searchInput').value.trim().toLowerCase();
+            const sortCol = document.getElementById('sortColumn').value;
+            const sortOrder = document.getElementById('sortOrder').value;
+            const filterCol = document.getElementById('filterColumn').value;
+            const filterVal = document.getElementById('filterValue').value.trim().toLowerCase();
+
+            // 1. Search & Filter
+            filteredData = currentData.filter(row => {
+                // Global search across all fields
+                let matchesSearch = true;
+                if (searchQuery) {
+                    matchesSearch = Object.values(row).some(val => 
+                        val !== null && String(val).toLowerCase().includes(searchQuery)
+                    );
+                }
+
+                // Column-specific filter
+                let matchesFilter = true;
+                if (filterCol && filterVal) {
+                    const cellValue = row[filterCol];
+                    matchesFilter = cellValue !== null && String(cellValue).toLowerCase().includes(filterVal);
+                }
+
+                return matchesSearch && matchesFilter;
+            });
+
+            // 2. Sort
+            if (sortCol) {
+                filteredData.sort((a, b) => {
+                    let valA = a[sortCol];
+                    let valB = b[sortCol];
+
+                    if (valA === null) return 1;
+                    if (valB === null) return -1;
+
+                    // Numeric comparison if both values are numbers
+                    if (!isNaN(valA) && !isNaN(valB)) {
+                        valA = Number(valA);
+                        valB = Number(valB);
+                    } else {
+                        valA = String(valA).toLowerCase();
+                        valB = String(valB).toLowerCase();
+                    }
+
+                    if (valA < valB) return sortOrder === 'ASC' ? -1 : 1;
+                    if (valA > valB) return sortOrder === 'ASC' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            renderTable();
+        }
+
+        function buildFormInputs() {
+            const formInputs = document.getElementById('formInputs');
+            formInputs.innerHTML = '';
+
+            if (currentData.length === 0) return;
+
+            const columns = Object.keys(currentData[0]);
+            columns.forEach(col => {
+                if (col.toLowerCase() === 'total') return; // Skip generated column
+
+                const div = document.createElement('div');
+                div.className = 'form-group';
+                div.innerHTML = `
+                    <label>${col}</label>
+                    <input type="text" id="input_${col}" name="${col}" ${col === pkField && isEditing ? 'readonly' : ''} required>
+                `;
+                formInputs.appendChild(div);
+            });
+        }
+
+        function renderTable() {
+            const container = document.getElementById('tableContainer');
+
+            if (filteredData.length === 0) {
+                container.innerHTML = '<i>No matching records found.</i>';
+                return;
+            }
+
+            const columns = Object.keys(filteredData[0]);
+            let html = '<table><thead><tr>';
+            columns.forEach(col => html += `<th>${col}</th>`);
+            html += '<th>Actions</th></tr></thead><tbody>';
+
+            filteredData.forEach((row) => {
+                html += '<tr>';
+                columns.forEach(col => {
+                    let val = row[col];
+                    html += `<td>${val !== null ? val : 'NULL'}</td>`;
+                });
+                
+                const pkValue = row[pkField];
+                html += `
+                    <td>
+                        <button class="btn-tbl" onclick="editRowByPK('${pkValue}')">Edit</button>
+                        <button class="btn-tbl" onclick="deleteRecord('${pkValue}')">Delete</button>
+                    </td>
+                </tr>`;
+            });
+
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function editRowByPK(pkVal) {
+            const row = currentData.find(r => String(r[pkField]) === String(pkVal));
+            if (!row) return;
+
+            isEditing = true;
+            document.getElementById('formTitle').innerText = 'Edit Record (' + pkField + ': ' + row[pkField] + ')';
+            document.getElementById('saveBtn').innerText = 'Update Record';
+
+            Object.keys(row).forEach(col => {
+                const input = document.getElementById(`input_${col}`);
+                if (input) {
+                    input.value = row[col] !== null ? row[col] : '';
+                    if (col === pkField) input.readOnly = true;
+                }
+            });
+        }
+
+        function resetForm() {
+            isEditing = false;
+            document.getElementById('formTitle').innerText = 'Add New Record';
+            document.getElementById('saveBtn').innerText = 'Save Record';
+            document.getElementById('recordForm').reset();
+            const pkInput = document.getElementById(`input_${pkField}`);
+            if (pkInput) pkInput.readOnly = false;
+        }
+
+        async function saveRecord(event) {
+            event.preventDefault();
+            const statusBox = document.getElementById('statusBox');
+            const formData = new FormData(event.target);
+            const payload = {};
+
+            formData.forEach((value, key) => payload[key] = value);
+
+            const method = isEditing ? 'PUT' : 'POST';
+
+            try {
+                const response = await fetch(`api/data?table=${currentTable}`, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.error || 'Failed to save record');
+
+                statusBox.innerHTML = `Status: <b>${res.message}</b>`;
+                resetForm();
+                loadTable();
+            } catch (err) {
+                statusBox.classList.add('error');
+                statusBox.innerText = 'Error: ' + err.message;
+            }
+        }
+
+        async function deleteRecord(id) {
+            if (!confirm(`Are you sure you want to delete record ${id}?`)) return;
+
+            const statusBox = document.getElementById('statusBox');
+            try {
+                const response = await fetch(`api/data?table=${currentTable}&id=${encodeURIComponent(id)}`, {
+                    method: 'DELETE'
+                });
+
+                const res = await response.json();
+                if (!response.ok) throw new Error(res.error || 'Failed to delete record');
+
+                statusBox.innerHTML = `Status: <b>${res.message}</b>`;
+                loadTable();
+            } catch (err) {
+                statusBox.classList.add('error');
+                statusBox.innerText = 'Error: ' + err.message;
+            }
+        }
+
+        window.onload = () => switchTable('Department');
+    </script>
+</body>
+</html>
